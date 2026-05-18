@@ -5,4 +5,4 @@ main = "./worker.js"
 [assets]
 directory = "./"
 [vars]
-PANEL_URL = "http://rayoo.uk:88/kabuti"
+PANEL_URL = "https://rayoo.uk:88/kabuti"
