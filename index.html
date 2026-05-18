@@ -11,16 +11,16 @@
     <div class="w-full max-w-md bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
         <div class="text-center mb-6">
             <h1 class="text-2xl font-bold text-emerald-400">VPN Client Portal</h1>
-            <p class="text-sm text-slate-400">Weka ID yako ya VPN kuona data na muda wako uliobaki</p>
+            <p class="text-sm text-slate-400">Weka Sub-Link yako au ID kuona matumizi ya bando</p>
         </div>
 
         <div class="space-y-4" id="login-section">
             <div>
-                <label class="block text-sm font-medium text-slate-300 mb-2">VPN Client ID / Email</label>
-                <input type="text" id="client-id" placeholder="Mfano: mteja@gmail.com au UUID" 
+                <label class="block text-sm font-medium text-slate-300 mb-2">VPN Client ID / UUID</label>
+                <input type="text" id="client-id" placeholder="Weka ID yako ya VPN hapa" 
                        class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 focus:outline-none focus:border-emerald-500 text-white">
             </div>
-            <button onclick="checkUsage()" id="btn-submit"
+            <button onclick="checkUsageDirect()" id="btn-submit"
                     class="w-full bg-emerald-500 hover:bg-emerald-600 font-semibold p-3 rounded-xl transition duration-200">
                 Angalia Taarifa →
             </button>
@@ -31,50 +31,45 @@
             <div class="border-b border-slate-700 pb-4 flex justify-between items-center">
                 <div>
                     <h2 id="res-remark" class="text-lg font-bold text-white">---</h2>
-                    <p class="text-xs text-slate-400">Akaunti Inatumika</p>
+                    <p class="text-xs text-slate-400">Akaunti Iko Hai</p>
                 </div>
                 <button onclick="logout()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg">Toka</button>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                    <p class="text-xs text-slate-400">Umetuma (Upload)</p>
+                    <p class="text-xs text-slate-400">Upload</p>
                     <p id="res-up" class="text-lg font-semibold text-slate-200">0 GB</p>
                 </div>
                 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                    <p class="text-xs text-slate-400">Umedownload</p>
+                    <p class="text-xs text-slate-400">Download</p>
                     <p id="res-down" class="text-lg font-semibold text-slate-200">0 GB</p>
                 </div>
             </div>
 
             <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
                 <div class="flex justify-between text-sm">
-                    <span class="text-slate-400">Jumla ya Matumizi:</span>
+                    <span class="text-slate-400">Jumla Uliyotumia:</span>
                     <span id="res-total-used" class="font-semibold text-emerald-400">0 GB</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-slate-400">Kikomo cha Bando (Limit):</span>
+                    <span class="text-slate-400">Kikomo cha Bando:</span>
                     <span id="res-limit" class="font-semibold text-slate-300">Haina Kikomo</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span class="text-slate-400">Muda wa Kuisha:</span>
-                    <span id="res-expiry" class="font-semibold text-amber-400">Haishi</span>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Kazi ya kubadilisha Bytes kwenda GB/MB rahisi kusomeka
         function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
+            if (!bytes || bytes === 0) return '0 Bytes';
             const k = 1024;
             const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        async function checkUsage() {
+        async function checkUsageDirect() {
             const clientId = document.getElementById('client-id').value.trim();
             const errorMsg = document.getElementById('error-msg');
             const btnSubmit = document.getElementById('btn-submit');
@@ -89,37 +84,42 @@
             btnSubmit.innerText = "Inatafuta...";
             btnSubmit.disabled = true;
 
-            try {
-                // Inaita ile endpoint yetu mpya ya Cloudflare Worker
-                const response = await fetch(`/check-usage?id=${encodeURIComponent(clientId)}`);
-                const result = await response.json();
+            // PANEL_URL yako ya VPS (Port 88 au yoyote uliyoweka kwenye VPS sasa hivi)
+            const VPS_URL = "https://rayoo.uk:88/kabuti"; 
 
+            try {
+                // Inatumia API ya kawaida ya mteja (Sub-API) ambayo haihitaji X-Token ya admin!
+                const response = await fetch(`${VPS_URL}/getsub?id=${clientId}`);
+                
                 if (!response.ok) {
-                    throw new Error(result.error || "Imeshindwa kupata taarifa.");
+                    throw new Error("ID uliyoweka haijapatikana au VPS imekataa kuunganisha.");
                 }
 
-                // Kuweka Data kwenye Screen
-                document.getElementById('res-remark').innerText = result.remark;
-                document.getElementById('res-up').innerText = formatBytes(result.up);
-                document.getElementById('res-down').innerText = formatBytes(result.down);
-                document.getElementById('res-total-used').innerText = formatBytes(result.up + result.down);
+                // Mifumo ya 3X-UI huwa inarudisha data za bando kwenye Header ya "subscription-userinfo"
+                const userInfo = response.headers.get("subscription-userinfo");
+                
+                if (!userInfo) {
+                    throw new Error("Imeshindwa kusoma data za bando. Hakikisha mteja ana matumizi.");
+                }
 
-                // Kikomo cha Bando
-                if (result.total > 0) {
-                    document.getElementById('res-limit').innerText = formatBytes(result.total);
+                // userInfo inakuwa hivi: upload=123; download=456; total=789; expire=0
+                const stats = {};
+                userInfo.split(';').forEach(item => {
+                    const parts = item.trim().split('=');
+                    if(parts[0]) stats[parts[0]] = parseInt(parts[1]) || 0;
+                });
+
+                document.getElementById('res-remark').innerText = "Mteja wako";
+                document.getElementById('res-up').innerText = formatBytes(stats.upload);
+                document.getElementById('res-down').innerText = formatBytes(stats.download);
+                document.getElementById('res-total-used').innerText = formatBytes(stats.upload + stats.download);
+
+                if (stats.total > 0) {
+                    document.getElementById('res-limit').innerText = formatBytes(stats.total);
                 } else {
                     document.getElementById('res-limit').innerText = "Haina Kikomo";
                 }
 
-                // Tarehe ya Kuisha
-                if (result.expiryTime > 0) {
-                    const date = new Date(result.expiryTime);
-                    document.getElementById('res-expiry').innerText = date.toLocaleDateString('sw-TZ', { day: 'numeric', month: 'long', year: 'numeric' });
-                } else {
-                    document.getElementById('res-expiry').innerText = "Haishi (Unlimited)";
-                }
-
-                // Badilisha muonekano wa page
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('result-section').classList.remove('hidden');
 
