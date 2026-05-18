@@ -8,7 +8,7 @@ export default {
     }
 
     // 2. Safisha URL na chukua ile PANEL_URL kutoka wrangler.toml
-    let base = env.PANEL_URL || "http://rayoo.uk:88/kabuti";
+    let base = env.PANEL_URL || "https://rayoo.uk:88/kabuti";
     
     // Ondoa slash ya mwisho kama ipo ili isigongane
     base = base.replace(/\/$/, ""); 
