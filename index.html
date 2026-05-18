@@ -11,16 +11,16 @@
     <div class="w-full max-w-md bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
         <div class="text-center mb-6">
             <h1 class="text-2xl font-bold text-emerald-400">VPN Client Portal</h1>
-            <p class="text-sm text-slate-400">Weka Sub-Link yako au ID kuona matumizi ya bando</p>
+            <p class="text-sm text-slate-400">Weka ID au Email yako kuona matumizi ya bando</p>
         </div>
 
         <div class="space-y-4" id="login-section">
             <div>
-                <label class="block text-sm font-medium text-slate-300 mb-2">VPN Client ID / UUID</label>
-                <input type="text" id="client-id" placeholder="Weka ID yako ya VPN hapa" 
+                <label class="block text-sm font-medium text-slate-300 mb-2">VPN Client ID au Email</label>
+                <input type="text" id="client-id" placeholder="Weka ID au Email yako hapa" 
                        class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 focus:outline-none focus:border-emerald-500 text-white">
             </div>
-            <button onclick="checkUsageDirect()" id="btn-submit"
+            <button onclick="checkUsageByAPI()" id="btn-submit"
                     class="w-full bg-emerald-500 hover:bg-emerald-600 font-semibold p-3 rounded-xl transition duration-200">
                 Angalia Taarifa →
             </button>
@@ -69,13 +69,13 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        async function checkUsageDirect() {
+        async function checkUsageByAPI() {
             const clientId = document.getElementById('client-id').value.trim();
             const errorMsg = document.getElementById('error-msg');
             const btnSubmit = document.getElementById('btn-submit');
 
             if(!clientId) {
-                errorMsg.innerText = "Tafadhali jaza ID yako.";
+                errorMsg.innerText = "Tafadhali jaza ID au Email yako.";
                 errorMsg.classList.remove('hidden');
                 return;
             }
@@ -84,35 +84,34 @@
             btnSubmit.innerText = "Inatafuta...";
             btnSubmit.disabled = true;
 
-            // PANEL_URL yako ya VPS (Port 88 au yoyote uliyoweka kwenye VPS sasa hivi)
-            const VPS_URL = "https://rayoo.uk:88/kabuti"; 
+            // URL ya VPS yako (Imeondolewa leno 'kabuti' ili iende moja kwa moja kwenye API)
+            const VPS_URL = "https://rayoo.uk:88"; 
 
             try {
-                // Inatumia API ya kawaida ya mteja (Sub-API) ambayo haihitaji X-Token ya admin!
-                const response = await fetch(`${VPS_URL}/getsub?id=${clientId}`);
+                // Hii ni Web API maalum ya 3X-UI inayotafuta matumizi kwa ID/Email bila Token ya Admin
+                const response = await fetch(`${VPS_URL}/api/client/traffic?id=${clientId}`, {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                });
                 
                 if (!response.ok) {
-                    throw new Error("ID uliyoweka haijapatikana au VPS imekataa kuunganisha.");
+                    throw new Error("Mteja hajapatikana, au VPS imekataa kuunganisha.");
                 }
 
-                // Mifumo ya 3X-UI huwa inarudisha data za bando kwenye Header ya "subscription-userinfo"
-                const userInfo = response.headers.get("subscription-userinfo");
+                const data = await response.json();
                 
-                if (!userInfo) {
-                    throw new Error("Imeshindwa kusoma data za bando. Hakikisha mteja ana matumizi.");
+                if (!data || !data.obj) {
+                    throw new Error("ID au Email uliyoweka si sahihi au haina matumizi yoyote.");
                 }
 
-                // userInfo inakuwa hivi: upload=123; download=456; total=789; expire=0
-                const stats = {};
-                userInfo.split(';').forEach(item => {
-                    const parts = item.trim().split('=');
-                    if(parts[0]) stats[parts[0]] = parseInt(parts[1]) || 0;
-                });
+                const stats = data.obj; // Inarudisha up, down, total n.k.
 
-                document.getElementById('res-remark').innerText = "Mteja wako";
-                document.getElementById('res-up').innerText = formatBytes(stats.upload);
-                document.getElementById('res-down').innerText = formatBytes(stats.download);
-                document.getElementById('res-total-used').innerText = formatBytes(stats.upload + stats.download);
+                document.getElementById('res-remark').innerText = stats.email || "Mteja";
+                document.getElementById('res-up').innerText = formatBytes(stats.up);
+                document.getElementById('res-down').innerText = formatBytes(stats.down);
+                document.getElementById('res-total-used').innerText = formatBytes(stats.up + stats.down);
 
                 if (stats.total > 0) {
                     document.getElementById('res-limit').innerText = formatBytes(stats.total);
@@ -124,7 +123,7 @@
                 document.getElementById('result-section').classList.remove('hidden');
 
             } catch (err) {
-                errorMsg.innerText = err.message;
+                errorMsg.innerText = "Error: Imeshindwa kuvuta data. Hakikisha umewasha CORS kwenye Panel settings na umezima Firewall.";
                 errorMsg.classList.remove('hidden');
             } finally {
                 btnSubmit.innerText = "Angalia Taarifa →";
