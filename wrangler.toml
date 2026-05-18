@@ -6,5 +6,5 @@ main = "./worker.js"
 directory = "./"
 
 [vars]
-PANEL_URL = "http://rayoo.uk:88/kabuti"
+PANEL_URL = "https://rayoo.uk:88/kabuti"
 API_TOKEN = "j6zbQ6KF19jehmkUIoWnoNAktKhINbpUq8b7gQVQlnhM0ElH"
