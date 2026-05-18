@@ -25,7 +25,7 @@ export default {
         return new Response(JSON.stringify({ error: "Tafadhali weka ID yako ya VPN." }), { status: 400, headers: corsHeaders });
       }
 
-      const base = (env.PANEL_URL || "http://rayoo.uk:88/kabuti").replace(/\/$/, "");
+      const base = (env.PANEL_URL || "https://rayoo.uk:88/kabuti").replace(/\/$/, "");
       const token = env.API_TOKEN;
 
       // URL ya kuvuta wateja wote kutoka kwenye 3X-UI panel
