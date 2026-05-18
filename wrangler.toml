@@ -7,4 +7,4 @@ directory = "./"
 
 [vars]
 PANEL_URL = "https://rayoo.uk:8443/kabuti"
-API_TOKEN = "j6zbQ6KF19jehmkUIoWnoNAktKhINbpUq8b7gQVQlnhM0ElH"
+API_TOKEN = "j6zbQ6KF19jehkUIoWnoNAktKhINbpUq8b7gQVQ1nhM0ElH"
