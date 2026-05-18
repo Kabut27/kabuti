@@ -1,7 +1,6 @@
 name = "kabuti"
 compatibility_date = "2026-05-18"
+main = "./worker.js"
 
 [assets]
 directory = "./"
-not_found_handling = "404-page"
-html_handling = "drop-trailing-slash"
