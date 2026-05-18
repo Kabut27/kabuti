@@ -25,7 +25,7 @@ export default {
       }
 
       // Kujenga base URL vizuri kutoka wrangler.toml
-      let base = (env.PANEL_URL || "https://rayoo.uk:88/kabuti").replace(/\/$/, "");
+      let base = (env.PANEL_URL || "https://rayoo.uk:8443/kabuti").replace(/\/$/, "");
 
       const token = env.API_TOKEN;
 
