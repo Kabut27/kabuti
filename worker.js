@@ -2,7 +2,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // 1. Kama mteja anafungua tu website ya kawaida ya index.html
+    // 1. Fungua ukurasa wa index.html
     if (url.pathname === "/" || url.pathname === "/index.html") {
       return await env.ASSETS.fetch(request);
     }
@@ -17,27 +17,28 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // 2. ENDPOINT: /check-usage?id=MTEJA_ID
+    // 2. ENDPOINT: /check-usage
     if (url.pathname === "/check-usage") {
       const clientId = url.searchParams.get("id") ? url.searchParams.get("id").trim().toLowerCase() : "";
       if (!clientId) {
         return new Response(JSON.stringify({ error: "Tafadhali weka ID au Jina lako la VPN." }), { status: 400, headers: corsHeaders });
       }
 
-      // Kujenga base URL vizuri kutoka wrangler.toml
-      let base = (env.PANEL_URL || "https://rayoo.uk:8443/kabuti").replace(/\/$/, "");
-
+      // Kupata na kusafisha base URL kutoka wrangler.toml
+      let base = (env.PANEL_URL || "https://rayoo.uk:8443/kabuti").trim().replace(/\/$/, "");
       const token = env.API_TOKEN;
 
-      // Tutajaribu njia kuu mbili za API za 3X-UI panel
+      // Njia zote zinazoweza kutumiwa na 3X-UI kutoa inbounds data
       const pathsToTry = [
         `${base}/panel/api/inbounds`,
         `${base}/xui/API/inbounds`,
-        `${base}/api/inbounds`
+        `${base}/api/inbounds`,
+        `https://rayoo.uk:8443/panel/api/inbounds`,
+        `https://rayoo.uk:8443/xui/API/inbounds`
       ];
 
       let responseData = null;
-      let fetchError = "";
+      let lastErrorMessage = "";
 
       for (const targetUrl of pathsToTry) {
         try {
@@ -46,30 +47,32 @@ export default {
             headers: {
               "Accept": "application/json",
               "X-Token": token
-            }
+            },
+            // Kuongeza timeout ili isikae muda mrefu ikisubiri link iliyokufa
+            signal: AbortSignal.timeout(5000)
           });
 
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.obj) {
               responseData = data.obj;
-              break; // Tumepata data, acha kutafuta kwenye njia zingine
+              break; 
             }
           }
         } catch (err) {
-          fetchError = err.message;
+          lastErrorMessage = err.message;
         }
       }
 
       if (!responseData) {
         return new Response(JSON.stringify({ 
-          error: "Imeshindwa kuunganisha kwenye VPS au API Token sio sahihi. Hakikisha API_TOKEN imejazwa kwenye wrangler.toml." 
+          error: `Imeshindwa kuunganisha kwenye VPS Server. Sababu: ${lastErrorMessage || "Connection Refused"}. Hakikisha Port 8443 iko wazi kule kwenye VPS Firewall (ufw allow 8443).` 
         }), { status: 502, headers: corsHeaders });
       }
 
       let clientInfo = null;
 
-      // Kuanza upekuzi wa mteja ndani ya inbounds zote
+      // Kuanza kutafuta mteja
       for (const inbound of responseData) {
         if (!inbound.settings) continue;
         
@@ -79,14 +82,12 @@ export default {
         } catch(e) { continue; }
 
         if (settings.clients) {
-          // Kutafuta kwa usahihi (kulinganisha ID, Email, au Remark ya mteja)
           const found = settings.clients.find(c => 
             (c.id && c.id.toLowerCase() === clientId) || 
             (c.email && c.email.toLowerCase() === clientId)
           );
 
           if (found) {
-            // Kupata takwimu (stats) za huyu mteja
             const stats = responseData.flatMap(i => i.clientStats || []).find(s => s.email === found.email);
             
             clientInfo = {
@@ -103,7 +104,7 @@ export default {
       }
 
       if (!clientInfo) {
-        return new Response(JSON.stringify({ error: "Mteja mwenye ID au Jina hili hajapatikana." }), { status: 444, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "Mteja mwenye ID au Jina hili hajapatikana kwenye VPS yako." }), { status: 444, headers: corsHeaders });
       }
 
       return new Response(JSON.stringify(clientInfo), {
