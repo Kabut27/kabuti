@@ -1,10 +1,17 @@
 export default {
   async fetch(request, env, ctx) {
-    // Inasoma PANEL_URL moja kwa moja kutoka kwenye wrangler.toml
-    const base = env.PANEL_URL || "http://rayoo.uk:88/kabuti"; 
     const url = new URL(request.url);
 
-    // Kushughulikia CORS ya browser
+    // 1. Kama request inatafuta faili la login au asset za kawaida za website
+    if (url.pathname === "/" || url.pathname === "/index.html" || !url.pathname.startsWith("/api")) {
+      // Hapa inatafuta lile faili lako la index.html lililopo kwenye GitHub/Cloudflare Pages
+      return await env.ASSETS.fetch(request); 
+    }
+
+    // 2. Kama request ni ya API kwenda kwenye VPS yako ya 3X-UI
+    const base = env.PANEL_URL || "http://rayoo.uk:88/kabuti";
+
+    // Kushughulikia CORS za browser
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
@@ -39,7 +46,7 @@ export default {
         headers: newHeaders,
       });
     } catch (err) {
-      return new Response("Error: " + err.message, { status: 502 });
+      return new Response("Error connecting to panel VPS: " + err.message, { status: 502 });
     }
   },
 };
