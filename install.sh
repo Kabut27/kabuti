@@ -8,8 +8,8 @@
 set -e
 
 # ── Config ──────────────────────────────────
-REPO_USER="YOUR_GITHUB_USERNAME"
-REPO_NAME="YOUR_REPO_NAME"
+REPO_USER="Kabut27"
+REPO_NAME="kabuti"
 BRANCH="main"
 TEMPLATE_FILE="sub.html"
 SOURCE_URL="https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/${BRANCH}/${TEMPLATE_FILE}"
