@@ -368,8 +368,6 @@
       0%   { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
-    body.loading .stat-val,
-    body.loading .stat-unit,
     body.loading .traffic-val,
     body.loading .traffic-unit,
     body.loading .ring-pct,
@@ -702,19 +700,6 @@
 
     setVol("dlVal","dlUnit",downB);
     setVol("ulVal","ulUnit",upB);
-    setVol("usedVal","usedUnit",usedB);
-    if(unlim){
-      document.getElementById("totalVal").innerHTML="∞";document.getElementById("totalUnit").innerText="";
-      document.getElementById("remVal").innerHTML="∞";document.getElementById("remUnit").innerText="";
-    }else{
-      setVol("totalVal","totalUnit",totalB||0);
-      setVol("remVal","remUnit",rem);
-    }
-
-    const ev=document.getElementById("expVal");
-    if(expDate&&expDate>new Date())ev.innerText=fDate(expDate);
-    else if(!expDate)ev.innerText="Unlimited";
-    else ev.innerText="Expired";
 
     const now=new Date();
     const isExpired=expDate&&expDate<=now;
